@@ -19,6 +19,8 @@ import com.google.maps.android.clustering.ClusterManager
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolylineClickListener,
     GoogleMap.OnPolygonClickListener {
 
+    private var circle: Circle? = null
+
     // List of Place objects gathered by the place reader
     private val places: List<Place> by lazy {
         PlacesReader(this).read()
@@ -45,9 +47,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
         // add markers to the google map
         mapFragment?.getMapAsync { googleMap ->
             addClusteredMarkers(googleMap)
-            //addMarkers(googleMap)
-            // Set custom info window adapter (when marker is clicked the description window will appear)
-            //googleMap.setInfoWindowAdapter(MarkerInfoWindowAdapter(this))
         }
     }
 
@@ -61,17 +60,36 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
                 clusterManager
             )
 
-        // Set custom info window adapter
+        // Set custom info window adapter (when marker is clicked the description window will appear)
         clusterManager.markerCollection.setInfoWindowAdapter(MarkerInfoWindowAdapter(this))
 
         // Add the places to the ClusterManager.
         clusterManager.addItems(places)
         clusterManager.cluster()
 
+        // Show polygon
+        clusterManager.setOnClusterItemClickListener { item ->
+            addCircle(googleMap, item)
+            return@setOnClusterItemClickListener false
+        }
+
         // Set ClusterManager as the OnCameraIdleListener so that it
         // can re-cluster when zooming in and out.
         googleMap.setOnCameraIdleListener {
             clusterManager.onCameraIdle()
+        }
+    }
+
+    private fun addCircle(googleMap: GoogleMap, item: Place?) {
+        circle?.remove()
+        if (item != null) {
+            circle = googleMap.addCircle(
+                CircleOptions()
+                    .center(item.latLng)
+                    .radius(1000.0)
+                    .fillColor(ContextCompat.getColor(this, R.color.teal_200))
+                    .strokeColor(ContextCompat.getColor(this, R.color.teal_700))
+            )
         }
     }
 
@@ -105,7 +123,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
 
 
     override fun onMapReady(googleMap: GoogleMap) {
-        val polygon1 = googleMap.addPolygon(
+        /*val polygon1 = googleMap.addPolygon(
             PolygonOptions()
             .clickable(true)
             .add(
@@ -125,7 +143,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
 
         // Set listeners for click events.
         googleMap.setOnPolylineClickListener(this)
-        googleMap.setOnPolygonClickListener(this)
+        googleMap.setOnPolygonClickListener(this)*/
     }
 
     override fun onPolylineClick(p0: Polyline) {
