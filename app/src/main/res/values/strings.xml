@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">GoogleMapsDemo</string>
+    <string name="title_activity_maps">MapsActivity</string>
+    <string name="map_id">e9f4109d1affafc8</string>
+</resources>
