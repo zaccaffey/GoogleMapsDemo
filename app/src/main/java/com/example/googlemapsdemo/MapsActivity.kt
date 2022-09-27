@@ -13,6 +13,7 @@ import com.google.codelabs.buildyourfirstmap.BitmapHelper
 import com.google.codelabs.buildyourfirstmap.place.Place
 import com.google.codelabs.buildyourfirstmap.place.PlaceRenderer
 import com.google.codelabs.buildyourfirstmap.place.PlacesReader
+import com.google.maps.android.clustering.ClusterManager
 
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolylineClickListener,
@@ -43,9 +44,34 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
         ) as? SupportMapFragment
         // add markers to the google map
         mapFragment?.getMapAsync { googleMap ->
-            addMarkers(googleMap)
+            addClusteredMarkers(googleMap)
+            //addMarkers(googleMap)
             // Set custom info window adapter (when marker is clicked the description window will appear)
-            googleMap.setInfoWindowAdapter(MarkerInfoWindowAdapter(this))
+            //googleMap.setInfoWindowAdapter(MarkerInfoWindowAdapter(this))
+        }
+    }
+
+    private fun addClusteredMarkers(googleMap: GoogleMap) {
+        // Create the ClusterManager class and set the custom renderer.
+        val clusterManager = ClusterManager<Place>(this, googleMap)
+        clusterManager.renderer =
+            PlaceRenderer(
+                this,
+                googleMap,
+                clusterManager
+            )
+
+        // Set custom info window adapter
+        clusterManager.markerCollection.setInfoWindowAdapter(MarkerInfoWindowAdapter(this))
+
+        // Add the places to the ClusterManager.
+        clusterManager.addItems(places)
+        clusterManager.cluster()
+
+        // Set ClusterManager as the OnCameraIdleListener so that it
+        // can re-cluster when zooming in and out.
+        googleMap.setOnCameraIdleListener {
+            clusterManager.onCameraIdle()
         }
     }
 
