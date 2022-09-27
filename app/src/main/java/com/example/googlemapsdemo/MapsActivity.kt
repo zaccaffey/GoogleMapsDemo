@@ -3,6 +3,7 @@ package com.example.googlemapsdemo
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.example.googlemapsdemo.databinding.ActivityMapsBinding
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -14,6 +15,9 @@ import com.google.codelabs.buildyourfirstmap.place.Place
 import com.google.codelabs.buildyourfirstmap.place.PlaceRenderer
 import com.google.codelabs.buildyourfirstmap.place.PlacesReader
 import com.google.maps.android.clustering.ClusterManager
+import com.google.maps.android.ktx.addMarker
+import com.google.maps.android.ktx.awaitMap
+import com.google.maps.android.ktx.awaitMapLoad
 
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolylineClickListener,
@@ -36,16 +40,25 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_maps)
 
-        binding = ActivityMapsBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        // define our map fragment as a support map fragment
+        val mapFragment =
+            supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
+        lifecycleScope.launchWhenCreated {
 
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        val mapFragment = supportFragmentManager.findFragmentById(
-            R.id.map
-        ) as? SupportMapFragment
-        // add markers to the google map
-        mapFragment?.getMapAsync { googleMap ->
+            // Get map
+            val googleMap = mapFragment.awaitMap()
+
+            // Wait for map to finish loading
+            googleMap.awaitMapLoad()
+
+            // Ensure all places are visible in the map when the screen first loads
+            val bounds = LatLngBounds.builder()
+            places.forEach { bounds.include(it.latLng) }
+            googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds.build(), 20))
+
+            // add map markers
             addClusteredMarkers(googleMap)
         }
     }
@@ -73,16 +86,31 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
             return@setOnClusterItemClickListener false
         }
 
-        // Set ClusterManager as the OnCameraIdleListener so that it
-        // can re-cluster when zooming in and out.
+        // this allows us to set the marker colors back to solid when the camera stops moving
+        // this also provides marker reclustering when the camera stops moving
         googleMap.setOnCameraIdleListener {
+            // When the camera stops moving, change the alpha value back to opaque.
+            clusterManager.markerCollection.markers.forEach { it.alpha = 1.0f }
+            clusterManager.clusterMarkerCollection.markers.forEach { it.alpha = 1.0f }
+
+            // Call clusterManager.onCameraIdle() when the camera stops moving so that reclustering
+            // can be performed when the camera stops moving.
             clusterManager.onCameraIdle()
+        }
+
+        // When the camera starts moving, change the alpha value of the marker to translucent.
+        googleMap.setOnCameraMoveStartedListener {
+            clusterManager.markerCollection.markers.forEach { it.alpha = 0.3f }
+            clusterManager.clusterMarkerCollection.markers.forEach { it.alpha = 0.3f }
         }
     }
 
     private fun addCircle(googleMap: GoogleMap, item: Place?) {
+        // remove the previous circle
         circle?.remove()
         if (item != null) {
+
+            // add a new circle to the item that was clicked
             circle = googleMap.addCircle(
                 CircleOptions()
                     .center(item.latLng)
@@ -93,21 +121,19 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
         }
     }
 
+    /**
+     * Adds markers to the map. These markers won't be clustered.
+     */
     private fun addMarkers(googleMap: GoogleMap) {
         places.forEach { place ->
-            // define and add marker options
-            val marker = googleMap.addMarker(
-                MarkerOptions()
-                    .title(place.name)
-                    .position(place.latLng)
-                    .icon(bicycleIcon)
-            )
-
+            val marker = googleMap.addMarker {
+                title(place.name)
+                position(place.latLng)
+                icon(bicycleIcon)
+            }
             // Set place as the tag on the marker object so it can be referenced within
             // MarkerInfoWindowAdapter
-            if (marker != null) {
-                marker.tag = place
-            }
+            marker.tag = place
         }
     }
 
