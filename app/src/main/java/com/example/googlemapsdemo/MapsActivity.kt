@@ -18,16 +18,17 @@ import com.google.codelabs.buildyourfirstmap.place.PlacesReader
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolylineClickListener,
     GoogleMap.OnPolygonClickListener {
 
+    // List of Place objects gathered by the place reader
     private val places: List<Place> by lazy {
         PlacesReader(this).read()
     }
 
+    // converts the drawable to a BitMap in order to be used as a map marker
     private val bicycleIcon: BitmapDescriptor by lazy {
         val color = ContextCompat.getColor(this, R.color.teal_700)
         BitmapHelper.vectorToBitmap(this, R.drawable.ic_directions_bike_black_24dp, color)
     }
 
-    private lateinit var mMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,15 +41,17 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
         val mapFragment = supportFragmentManager.findFragmentById(
             R.id.map
         ) as? SupportMapFragment
+        // add markers to the google map
         mapFragment?.getMapAsync { googleMap ->
             addMarkers(googleMap)
-            // Set custom info window adapter
+            // Set custom info window adapter (when marker is clicked the description window will appear)
             googleMap.setInfoWindowAdapter(MarkerInfoWindowAdapter(this))
         }
     }
 
     private fun addMarkers(googleMap: GoogleMap) {
         places.forEach { place ->
+            // define and add marker options
             val marker = googleMap.addMarker(
                 MarkerOptions()
                     .title(place.name)

@@ -8,6 +8,8 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.Marker
 import com.google.codelabs.buildyourfirstmap.place.Place
 
+
+/*This is used to display a menu upon clicking the map markers that displays the title, address, and rating of each bike shop*/
 class MarkerInfoWindowAdapter(
     private val context: Context
 ) : GoogleMap.InfoWindowAdapter {
