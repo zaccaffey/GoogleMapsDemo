@@ -8,10 +8,16 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
+import com.google.codelabs.buildyourfirstmap.place.Place
+import com.google.codelabs.buildyourfirstmap.place.PlacesReader
 
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolylineClickListener,
     GoogleMap.OnPolygonClickListener {
+
+    private val places: List<Place> by lazy {
+        PlacesReader(this).read()
+    }
 
     private lateinit var mMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
@@ -22,14 +28,22 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
         binding = ActivityMapsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-
-
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager.findFragmentById(
             R.id.map
         ) as? SupportMapFragment
         mapFragment?.getMapAsync { googleMap ->
             addMarkers(googleMap)
+        }
+    }
+
+    private fun addMarkers(googleMap: GoogleMap) {
+        places.forEach { place ->
+            val marker = googleMap.addMarker(
+                MarkerOptions()
+                    .title(place.name)
+                    .position(place.latLng)
+            )
         }
     }
 
@@ -42,6 +56,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
      * it inside the SupportMapFragment. This method will only be triggered once the user has
      * installed Google Play services and returned to the app.
      */
+
+
     override fun onMapReady(googleMap: GoogleMap) {
         val polygon1 = googleMap.addPolygon(
             PolygonOptions()
