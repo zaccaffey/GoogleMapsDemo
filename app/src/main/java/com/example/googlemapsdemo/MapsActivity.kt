@@ -2,13 +2,16 @@ package com.example.googlemapsdemo
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.example.googlemapsdemo.databinding.ActivityMapsBinding
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
+import com.google.codelabs.buildyourfirstmap.BitmapHelper
 import com.google.codelabs.buildyourfirstmap.place.Place
+import com.google.codelabs.buildyourfirstmap.place.PlaceRenderer
 import com.google.codelabs.buildyourfirstmap.place.PlacesReader
 
 
@@ -17,6 +20,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
 
     private val places: List<Place> by lazy {
         PlacesReader(this).read()
+    }
+
+    private val bicycleIcon: BitmapDescriptor by lazy {
+        val color = ContextCompat.getColor(this, R.color.teal_700)
+        BitmapHelper.vectorToBitmap(this, R.drawable.ic_directions_bike_black_24dp, color)
     }
 
     private lateinit var mMap: GoogleMap
@@ -34,6 +42,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
         ) as? SupportMapFragment
         mapFragment?.getMapAsync { googleMap ->
             addMarkers(googleMap)
+            // Set custom info window adapter
+            googleMap.setInfoWindowAdapter(MarkerInfoWindowAdapter(this))
         }
     }
 
@@ -43,7 +53,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnPolyli
                 MarkerOptions()
                     .title(place.name)
                     .position(place.latLng)
+                    .icon(bicycleIcon)
             )
+
+            // Set place as the tag on the marker object so it can be referenced within
+            // MarkerInfoWindowAdapter
+            if (marker != null) {
+                marker.tag = place
+            }
         }
     }
 
